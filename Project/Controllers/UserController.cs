@@ -93,7 +93,7 @@ namespace Project.Controllers
             }
             else
             {
-                var user = await _context.Users.FindAsync(id);
+                var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id); //AsNoTracking() fonksiyon kullanýmý
                 if (user == null)
                 {
                     return NotFound();
@@ -110,10 +110,41 @@ namespace Project.Controllers
 
             return Ok(userDto);
         }
+
+        [HttpGet("{id}/permissions")]
+        public async Task<IActionResult> GetUserPermissionsById(int id)
+        {
+            var cacheKey = $"User_{id}";
+            var cachedUser = await _distributedCache.GetStringAsync(cacheKey);
+            List<UserPermission> userPermissions;
+            if (!string.IsNullOrEmpty(cachedUser))
+            {
+                userPermissions = JsonSerializer.Deserialize<List<UserPermission>>(cachedUser);
+            }
+            else
+            {
+                var user = await _context.Users.AsNoTracking().Include(u => u.UserPermissions).FirstOrDefaultAsync(u => u.Id == id); //AsNoTracking() fonksiyon kullanýmý
+                if (user == null)
+                {
+                    return NotFound();
+                }
+                userPermissions = user.UserPermissions; // Lazy Loading
+                var cacheOptions = new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+                };
+
+                await _distributedCache.SetStringAsync(cacheKey, JsonSerializer.Serialize(userPermissions), cacheOptions);
+            }
+
+            return Ok(userPermissions);
+        }
+
         public async Task<bool> HasPermission(int userId, string permissionName)
         {
             var user = await _context.Users
-                .Include(u => u.UserPermissions)
+                .AsNoTracking() //AsNoTracking() fonksiyon kullanýmý
+                .Include(u => u.UserPermissions) // Eager Loading
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
@@ -123,6 +154,7 @@ namespace Project.Controllers
 
             return user.UserPermissions.Any(up => up.PermissionName == permissionName);
         }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, UserDto userDto)
         {
@@ -134,13 +166,12 @@ namespace Project.Controllers
                 return Forbid("You do not have permission to update user information.");
             }
 
-
             if (id != userDto.Id)
             {
                 return BadRequest();
             }
 
-            var user = await _context.Users.FindAsync(id);
+            var user = await _context.Users.AsTracking().FirstOrDefaultAsync(u => u.Id == id); //AsTracking() fonksiyon kullanýmý
             if (user == null)
             {
                 return NotFound();
@@ -176,7 +207,7 @@ namespace Project.Controllers
 
         private bool UserExists(int id)
         {
-            return _context.Users.Any(e => e.Id == id);
+            return _context.Users.AsNoTracking().Any(e => e.Id == id); //AsNoTracking() fonksiyon kullanýmý
         }
 
         [HttpDelete("{id}")]
@@ -190,7 +221,7 @@ namespace Project.Controllers
                 return Forbid();
             }
 
-            var user = await _context.Users.FindAsync(id);
+            var user = await _context.Users.AsTracking().FirstOrDefaultAsync(u => u.Id == id); //AsNoTracking() fonksiyon kullanýmý
             if (user == null)
             {
                 return NotFound();
