@@ -35,6 +35,10 @@ namespace Project.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateUser(UserDto userDto, string password)
         {
+            if (string.IsNullOrEmpty(password) || password.Length < 6)
+            {
+                return BadRequest("Password must be at least 6 characters long.");
+            }
             var user = _mapper.Map<User>(userDto);
             user.CreatedTime = DateTime.UtcNow;
             user.UpdatedTime = DateTime.UtcNow;
@@ -106,14 +110,25 @@ namespace Project.Controllers
 
             return Ok(userDto);
         }
+        public async Task<bool> HasPermission(int userId, string permissionName)
+        {
+            var user = await _context.Users
+                .Include(u => u.UserPermissions)
+                .FirstOrDefaultAsync(u => u.Id == userId);
 
+            if (user == null)
+            {
+                return false;
+            }
+
+            return user.UserPermissions.Any(up => up.PermissionName == permissionName);
+        }
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, UserDto userDto)
         {
             var currentUserId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == "Id")?.Value);
 
-            // Kullanýcýnýn güncelleme iznine sahip olup olmadýðýný kontrol et
-            var hasUpdatePermission = await _authorizationService.HasPermission(currentUserId, "Update");
+            var hasUpdatePermission = await HasPermission(currentUserId, "Update");
             if (!hasUpdatePermission)
             {
                 return Forbid("You do not have permission to update user information.");
