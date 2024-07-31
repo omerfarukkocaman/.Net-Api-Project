@@ -12,17 +12,24 @@ namespace Project.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<UserPermission> UserPermissions { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<User>()
                 .HasMany(u => u.UserPermissions)
-                .WithMany();
+                .WithOne(up => up.User)
+                .HasForeignKey(up => up.UserId);
 
             base.OnModelCreating(modelBuilder);
         }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseLazyLoadingProxies();
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.UseLazyLoadingProxies(); // Lazy loading kullanýmý için
+            }
         }
+       
     }
 }

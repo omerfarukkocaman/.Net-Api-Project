@@ -43,7 +43,7 @@ namespace Project.Controllers
             user.CreatedTime = DateTime.UtcNow;
             user.UpdatedTime = DateTime.UtcNow;
             user.Password = password;
-
+            user.UserType = UserType.User;
             try
             {
                 _context.Users.Add(user);
@@ -55,7 +55,7 @@ namespace Project.Controllers
                 };
                 await _distributedCache.SetStringAsync(user.Id.ToString(), JsonSerializer.Serialize(user), cacheOptions);
 
-                await NotifyUserCreation();
+                //await NotifyUserCreation();
 
                 return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
             }
@@ -139,28 +139,14 @@ namespace Project.Controllers
 
             return Ok(userPermissions);
         }
-
-        public async Task<bool> HasPermission(int userId, string permissionName)
-        {
-            var user = await _context.Users
-                .AsNoTracking() //AsNoTracking() fonksiyon kullanýmý
-                .Include(u => u.UserPermissions) // Eager Loading
-                .FirstOrDefaultAsync(u => u.Id == userId);
-
-            if (user == null)
-            {
-                return false;
-            }
-
-            return user.UserPermissions.Any(up => up.PermissionName == permissionName);
-        }
+        
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, UserDto userDto)
         {
             var currentUserId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == "Id")?.Value);
 
-            var hasUpdatePermission = await HasPermission(currentUserId, "Update");
+            var hasUpdatePermission = await _authorizationService.HasPermission(currentUserId, "Update");
             if (!hasUpdatePermission)
             {
                 return Forbid("You do not have permission to update user information.");
@@ -171,7 +157,7 @@ namespace Project.Controllers
                 return BadRequest();
             }
 
-            var user = await _context.Users.AsTracking().FirstOrDefaultAsync(u => u.Id == id); //AsTracking() fonksiyon kullanýmý
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
             if (user == null)
             {
                 return NotFound();
@@ -221,7 +207,7 @@ namespace Project.Controllers
                 return Forbid();
             }
 
-            var user = await _context.Users.AsTracking().FirstOrDefaultAsync(u => u.Id == id); //AsNoTracking() fonksiyon kullanýmý
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
             if (user == null)
             {
                 return NotFound();

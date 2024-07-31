@@ -5,10 +5,12 @@ namespace Project.Models
 {
     public class UserPermission
     {
-        public int Id { get; set; } 
+        public int Id { get; set; }
         public string PermissionName { get; set; }
-        [ForeignKey("user")]
+
+        [ForeignKey("User")]
         public int UserId { get; set; }
-        public User user { get; set; }
+
+        public virtual User? User { get; set; }
     }
 }

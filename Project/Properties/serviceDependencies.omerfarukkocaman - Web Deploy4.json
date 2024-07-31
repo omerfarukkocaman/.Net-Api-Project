@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "apis2": {
+      "apiEndpoint": "https://omerfarukkocaman.azure-api.net/project",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.ApiManagement/service/omerfarukkocaman/apis/Project",
+      "type": "apis.azure"
+    },
+    "identityapp1": {
+      "connectionInfo": "Uygulama kaydı: omerfarukkocaman, Kiracı: Varsayılan Dizin (omerfaruk3838hotmail.onmicrosoft.com - Microsoft Entra ID)",
+      "type": "identityapp.default"
+    },
+    "mssql1": {
+      "serviceConnectorResourceId": "",
+      "secretStore": "AzureAppSettings",
+      "resourceId": null,
+      "type": "mssql.onprem",
+      "connectionId": "ConnectionStrings:DefaultConnection"
+    }
+  }
+}

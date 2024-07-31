@@ -15,7 +15,20 @@ namespace Project.Models
             _context = context;
         }
 
+        public async Task<bool> HasPermission(int userId, string permissionName)
+        {
+            var user = await _context.Users
+                .AsNoTracking() //AsNoTracking() fonksiyon kullanımı
+                .Include(u => u.UserPermissions) // Eager Loading
+                .FirstOrDefaultAsync(u => u.Id == userId);
 
-        
+            if (user == null)
+            {
+                return false;
+            }
+
+            return user.UserPermissions.Any(up => up.PermissionName == permissionName);
+        }
+
     }
 }

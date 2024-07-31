@@ -10,8 +10,9 @@ namespace Project.Models
         public DateTime? CreatedTime { get; set; }
         public DateTime? UpdatedTime { get; set; }
         public UserType? UserType { get; set; }
-        public List<UserPermission>? UserPermissions { get; set; }
+        public virtual List<UserPermission>? UserPermissions { get; set; }
     }
+
     public enum UserType
     {
         Admin,
